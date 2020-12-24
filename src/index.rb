@@ -50,7 +50,7 @@ processed_rows =
     row['volume'] = row['volume'].to_f
 
     # pre compute for efficiency and ease
-    row['quarter'] = "Q#{dt.month / 3}" # Q1, Q2, Q3, Q4
+    row['quarter'] = "Q#{(dt.month + 2) / 3}" # .month returns 1..12 - we need Q1, Q2, Q3, Q4
     row['year'] = dt.year
     row['month'] = dt.at_beginning_of_month # to create a group on month
     row['gain_or_loss'] = row['open'] > row['close'] ? 'Loss' : 'Gain'
