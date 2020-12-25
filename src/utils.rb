@@ -19,3 +19,10 @@ def flatten_results(results)
 
   { "chartId": chart_id, "values": data }
 end
+
+def prep_elastic_query(chart_conf)
+  aggs_conf = chart_conf[:dimension]
+  aggs_conf = aggs_conf.merge({ aggs: chart_conf[:aggs] }) if chart_conf[:aggs]
+
+  { size: 0, aggs: { chart_conf[:chart_id] => aggs_conf } }
+end
