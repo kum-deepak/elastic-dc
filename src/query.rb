@@ -1,6 +1,7 @@
 require_relative 'common'
 require 'hashie/mash'
 require 'json'
+require_relative 'utils'
 
 search_client = init_search_client
 
@@ -18,7 +19,9 @@ qry = {
       'terms': { 'field': 'month', "size": 5 },
       'aggs': {
         'avgMove': {
-          'avg': { "script": { "source": "( doc.open.value + doc.close.value ) / 2" } }
+          'avg': {
+            "script": { "source": '( doc.open.value + doc.close.value ) / 2' }
+          }
         }
       }
     }
@@ -37,16 +40,36 @@ qry = {
   size: 0,
   aggs: {
     "yearly-bubble-chart": {
-      terms: {field: 'year'},
+      terms: { field: 'year', size: 1000 },
       aggs: {
         avgIndex: {
-          avg: { "script": { "source": "( doc.open.value + doc.close.value ) / 2" } }
+          avg: {
+            "script": { "source": '( doc.open.value + doc.close.value ) / 2' }
+          }
         },
         absGain: {
-          sum: { "script": { "source": "( doc.close.value - doc.open.value )" } }
+          sum: {
+            "script": { "source": '( doc.close.value - doc.open.value )' }
+          }
         },
         fluctuation: {
-          sum: { "script": { "source": "Math.abs( doc.close.value - doc.open.value )" } }
+          sum: {
+            "script": {
+              "source": 'Math.abs( doc.close.value - doc.open.value )'
+            }
+          }
+        },
+        percentageGain: {
+          bucket_script: {
+            buckets_path: { avgIndex: 'avgIndex', absGain: 'absGain' },
+            script: 'params.absGain / params.avgIndex * 100'
+          }
+        },
+        fluctuationPercentage: {
+          bucket_script: {
+            buckets_path: { avgIndex: 'avgIndex', fluctuation: 'fluctuation' },
+            script: 'params.fluctuation / params.avgIndex * 100'
+          }
         }
       }
     }
@@ -54,5 +77,8 @@ qry = {
 }
 
 results = search_client.search(index: INDEX, body: qry.to_json)
+flattened = flatten_results(results)
 
-results = search_client.msearch(index: INDEX, body: [{ search: qry }])
+puts flatten_results(results).to_json
+
+# results = search_client.msearch(index: INDEX, body: [{ search: qry }])
