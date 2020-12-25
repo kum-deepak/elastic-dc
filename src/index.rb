@@ -19,7 +19,7 @@ filed_mappings = {
     "close": { "type": 'double' },
     "high": { "type": 'double' },
     "low": { "type": 'double' },
-    "volume": { "type": 'double' },
+    "volume": { "type": 'integer' },
     "quarter": { "type": 'keyword' },
     "year": { "type": 'integer' },
     "month": { "type": 'date' },
@@ -47,7 +47,7 @@ processed_rows =
     row['close'] = row['close'].to_f
     row['high'] = row['high'].to_f
     row['low'] = row['low'].to_f
-    row['volume'] = row['volume'].to_f
+    row['volume'] = row['volume'].to_i
 
     # pre compute for efficiency and ease
     row['quarter'] = "Q#{(dt.month + 2) / 3}" # .month returns 1..12 - we need Q1, Q2, Q3, Q4
