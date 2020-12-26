@@ -37,8 +37,23 @@ def flatten_results(results)
 end
 
 def prep_elastic_query(chart_conf)
-  aggs_conf = chart_conf[:dimension]
-  aggs_conf = aggs_conf.merge({ aggs: chart_conf[:aggs] }) if chart_conf[:aggs]
+  if chart_conf[:layers]
+    chart_conf[:layers].each_with_index.map do |layer, i|
+      aggs_conf = { meta: { chartId: chart_conf[:chart_id], layer: i } }
 
-  { size: 0, aggs: { chart_conf[:chart_id] => aggs_conf } }
+      aggs_conf = aggs_conf.merge(chart_conf[:dimension])
+
+      aggs_conf[:aggs] = layer[:aggs] if layer[:aggs]
+
+      { size: 0, aggs: { "#{i}" => aggs_conf } }
+    end
+  else
+    aggs_conf = { meta: { chartId: chart_conf[:chart_id] } }
+
+    aggs_conf = aggs_conf.merge(chart_conf[:dimension])
+
+    aggs_conf[:aggs] = chart_conf[:aggs] if chart_conf[:aggs]
+
+    [{ size: 0, aggs: { '0' => aggs_conf } }]
+  end
 end

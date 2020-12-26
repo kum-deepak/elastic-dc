@@ -1,5 +1,5 @@
 # Elastic returns 10 buckets by default, to avoid that set a high enough size
-BKTS = 10_000
+BKTS = 5
 
 # A dimension will get aggregated based on unique values. In final output
 # `key` will be value of the dimension. By default number of matched documents
@@ -91,6 +91,6 @@ CONF = [
   {
     chart_id: 'monthly-volume-chart',
     dimension: month_dimension,
-    aggs: volume_by_month_group_agg
+    layers: [{ aggs: volume_by_month_group_agg }, {}]
   }
 ].freeze

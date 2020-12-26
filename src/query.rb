@@ -8,11 +8,11 @@ require_relative 'conf'
 search_client = init_search_client
 
 flattened =
-  CONF.map do |conf|
-    qry = prep_elastic_query(conf)
-
-    results = search_client.search(index: INDEX, body: qry.to_json)
-    flatten_results(results)
+  CONF[4..5].map do |conf|
+    prep_elastic_query(conf).map do |qry|
+      results = search_client.search(index: INDEX, body: qry.to_json)
+      flatten_results(results)
+    end
   end
 
 puts flattened.to_json
