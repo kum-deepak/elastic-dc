@@ -33,13 +33,19 @@ def flatten_results(results)
       .map { |bucket| flatten_bucket(bucket) }
       .sort_by { |b| b[:key] }
 
-  { "chartId": chart_id, "values": data }
+  flattened = { "chartId": res['meta']['chartId'], "values": data }
+
+  flattened[:layer] = res['meta']['layer'] if res['meta']['layer']
+
+  flattened
 end
 
 def prep_elastic_query(chart_conf)
-  if chart_conf[:layers]
-    chart_conf[:layers].each_with_index.map do |layer, i|
-      aggs_conf = { meta: { chartId: chart_conf[:chart_id], layer: i } }
+  if chart_conf[:charts]
+    chart_conf[:charts].each_with_index.map do |layer, i|
+      meta = { chartId: layer[:chart_id] }
+      meta[:layer] = layer[:layer] if layer.key? :layer
+      aggs_conf = { meta: meta }
 
       aggs_conf = aggs_conf.merge(chart_conf[:dimension])
 

@@ -89,8 +89,14 @@ CONF = [
   },
   { chart_id: 'fluctuation-chart', dimension: fluctuation_dimension },
   {
-    chart_id: 'monthly-volume-chart',
     dimension: month_dimension,
-    layers: [{ aggs: volume_by_month_group_agg }, {}]
+    charts: [
+      {
+        chart_id: 'monthly-volume-chart',
+        aggs: volume_by_month_group_agg,
+        layer: 0
+      },
+      { chart_id: 'xx-chart' }
+    ]
   }
 ].freeze
