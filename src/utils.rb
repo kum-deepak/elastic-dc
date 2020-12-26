@@ -6,6 +6,15 @@ def flatten_bucket(bucket)
       end
     ]
   key = hash.delete('key')
+
+  if hash.key?('only_me')
+    # Set agg name to only_me, if you want that itself as value
+    hash = hash['only_me']
+  else
+    # only doc_count will be there if no explicit aggs were provided, the doc_count becomes value in suc cases
+    hash = hash['doc_count'] if hash.keys.size == 1
+  end
+
   { key: key, value: hash }
 end
 

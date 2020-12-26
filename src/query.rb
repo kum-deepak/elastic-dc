@@ -7,34 +7,14 @@ require_relative 'conf'
 
 search_client = init_search_client
 
-queries = {}
+flattened =
+  CONF.map do |conf|
+    qry = prep_elastic_query(conf)
 
-qry = {
-  'size': 0,
-  'aggs': { 'quarter': { 'terms': { 'field': 'quarter', "size": 1000 } } }
-}
+    results = search_client.search(index: INDEX, body: qry.to_json)
+    flatten_results(results)
+  end
 
-qry = {
-  'size': 0,
-  'aggs': {
-    'month': {
-      'terms': { 'field': 'month', "size": 5 },
-      'aggs': {
-        'avgMove': {
-          'avg': {
-            "script": { "source": '( doc.open.value + doc.close.value ) / 2' }
-          }
-        }
-      }
-    }
-  }
-}
-
-qry = prep_elastic_query(CONF[0])
-
-results = search_client.search(index: INDEX, body: qry.to_json)
-flattened = flatten_results(results)
-
-puts flatten_results(results).to_json
+puts flattened.to_json
 
 # results = search_client.msearch(index: INDEX, body: [{ search: qry }])
