@@ -69,6 +69,7 @@ yearly_bubble_chart_agg = {
 quarter_chart_agg = { only_me: { sum: { field: 'volume' } } }
 
 # moveMonths.group().reduceSum(d => d.volume / 500000);
+# Since volume is integer as per index definition, it is important to use 500000.0 to avoid integer division
 volume_by_month_group_agg = {
   only_me: { sum: { "script": { "source": 'doc.volume.value / 500000.0' } } }
 }
