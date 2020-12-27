@@ -25,7 +25,15 @@ def flatten_bucket(bucket)
   { key: key, value: hash }
 end
 
-def extract_result(result)
+def retrieve_value_accessor(meta, value_accessors)
+  if meta.key?('value_accessor')
+    value_accessors[meta['value_accessor'].to_i]
+  else
+    nil
+  end
+end
+
+def extract_result(result, value_accessors)
   result['aggregations'].values.map do |res|
     data =
       res['buckets']
@@ -34,13 +42,22 @@ def extract_result(result)
 
     extracted = res['meta']
     extracted['chartId'] = extracted.delete('chart_id')
+
+    # value_accessor
+    value_accessor = retrieve_value_accessor(res['meta'], value_accessors)
+    if !value_accessor.nil?
+      data.each { |d| d[:_value] = value_accessor.call(d) }
+    else
+      data.each { |d| d[:_value] = d[:value] }
+    end
+
     extracted['values'] = data
 
     extracted
   end
 end
 
-def prep_elastic_query(entry)
+def prep_elastic_query(entry, value_accessors)
   dim_conf = entry[:dimension]
 
   # sometimes more than one 'groups' can be associated with the same dimension
@@ -51,6 +68,12 @@ def prep_elastic_query(entry)
       # the meta entries are returned by Elastic as part of the results.
       # These are used to arrange the output for specific charts
       meta = chart_conf.slice(:chart_id, :layer, :name)
+
+      if chart_conf[:value_accessor]
+        # replace the lambda by the index where it is getting stored
+        value_accessors.push(chart_conf[:value_accessor])
+        meta[:value_accessor] = value_accessors.size - 1
+      end
 
       # If there is a layer, ensure it has a name (as string)
       meta[:name] = "#{meta[:layer]}" if meta.key?(:layer) && !meta.key?(:name)

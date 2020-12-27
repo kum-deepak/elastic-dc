@@ -109,7 +109,7 @@ CONF = [
     chart_id: 'yearly-bubble-chart',
     aggs: yearly_bubble_chart_agg,
     # valueAccessor: p => p.value.percentageGain
-    value_accessor: ->(p) { p['value']['percentageGain'] }
+    value_accessor: ->(p) { p[:value]['percentageGain'] }
   },
   { chart_id: 'gain-loss-chart', dimension: gain_or_loss_dimension },
   { chart_id: 'day-of-week-chart', dimension: day_of_week_dimension },
@@ -126,7 +126,7 @@ CONF = [
         chart_id: 'monthly-move-chart',
         aggs: index_avg_by_month_agg,
         # valueAccessor: d => d.value.avg
-        value_accessor: ->(d) { d['value']['avg'] },
+        value_accessor: ->(d) { d[:value]['avg'] },
         name: 'Monthly Index Average',
         layer: 0
       },

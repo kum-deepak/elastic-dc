@@ -7,7 +7,8 @@ require_relative 'conf'
 
 search_client = init_search_client
 
-prepared_queries = CONF.map { |conf| prep_elastic_query(conf) }
+value_accessors = []
+prepared_queries = CONF.map { |conf| prep_elastic_query(conf, value_accessors) }
 
 raw_results =
   search_client.msearch(
@@ -15,7 +16,10 @@ raw_results =
     body: prepared_queries.map { |q| { search: q } }
   )
 
-extracted = raw_results['responses'].map { |result| extract_result(result) }.flatten
+extracted =
+  raw_results['responses'].map do |result|
+    extract_result(result, value_accessors)
+  end.flatten
 
 formatted =
   extracted
