@@ -9,17 +9,16 @@ search_client = init_search_client
 
 prepared_queries = CONF.map { |conf| prep_elastic_query(conf) }
 
-results =
+raw_results =
   search_client.msearch(
     index: INDEX,
     body: prepared_queries.map { |q| { search: q } }
   )
 
-extracted = results['responses'].map { |result| extract_result(result) }
+extracted = raw_results['responses'].map { |result| extract_result(result) }.flatten
 
 formatted =
   extracted
-    .flatten
     .group_by { |e| e['chartId'] }
     .map do |chart_id, results|
       if results.size == 1 && !results[0].key?('layer')
