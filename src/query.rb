@@ -1,5 +1,4 @@
 require_relative 'lib/common'
-require 'hashie/mash'
 require 'json'
 
 require_relative 'lib/result_helpers'
