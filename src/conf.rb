@@ -1,3 +1,5 @@
+require 'deep-freeze'
+
 # Elastic returns 10 buckets by default, to avoid that set a high enough size
 BKTS = 10_000
 
@@ -109,45 +111,49 @@ yearly_bubble_chart_agg = {
 
 # Only the CONF is used outside this file
 
-CONF = [
-  {
-    dimension: yearly_dimension,
-    chart_id: 'yearly-bubble-chart',
-    aggs: yearly_bubble_chart_agg,
-    # valueAccessor: p => p.value.percentageGain
-    # The result processing functions use all keys as strings (not symbols)
-    value_accessor: ->(p) { p['value']['percentageGain'] }
-  },
-  { chart_id: 'gain-loss-chart', dimension: gain_or_loss_dimension },
-  { chart_id: 'day-of-week-chart', dimension: day_of_week_dimension },
-  {
-    chart_id: 'quarter-chart',
-    dimension: quarter_dimension,
-    aggs: quarter_chart_agg
-  },
-  { chart_id: 'fluctuation-chart', dimension: fluctuation_dimension },
-  {
-    dimension: month_dimension,
-    charts: [
-      {
-        chart_id: 'monthly-move-chart',
-        aggs: index_avg_by_month_agg,
-        # valueAccessor: d => d.value.avg
-        value_accessor: ->(d) { d['value']['avg'] },
-        name: 'Monthly Index Average',
-        layer: 0
-      },
-      {
-        chart_id: 'monthly-move-chart',
-        aggs: index_move_by_month,
-        name: 'Monthly Index Move',
-        layer: 1
-      },
-      {
-        chart_id: 'monthly-volume-chart',
-        aggs: volume_by_month_group_agg,
-        layer: 0
-      }
-    ]
-  }
-].freeze
+CONF = {
+  # whether to include selected/total row-counts
+  counts: true,
+  charts: [
+    {
+      dimension: yearly_dimension,
+      chart_id: 'yearly-bubble-chart',
+      aggs: yearly_bubble_chart_agg,
+      # valueAccessor: p => p.value.percentageGain
+      # The result processing functions use all keys as strings (not symbols)
+      value_accessor: ->(p) { p['value']['percentageGain'] }
+    },
+    { chart_id: 'gain-loss-chart', dimension: gain_or_loss_dimension },
+    { chart_id: 'day-of-week-chart', dimension: day_of_week_dimension },
+    {
+      chart_id: 'quarter-chart',
+      dimension: quarter_dimension,
+      aggs: quarter_chart_agg
+    },
+    { chart_id: 'fluctuation-chart', dimension: fluctuation_dimension },
+    {
+      dimension: month_dimension,
+      charts: [
+        {
+          chart_id: 'monthly-move-chart',
+          aggs: index_avg_by_month_agg,
+          # valueAccessor: d => d.value.avg
+          value_accessor: ->(d) { d['value']['avg'] },
+          name: 'Monthly Index Average',
+          layer: 0
+        },
+        {
+          chart_id: 'monthly-move-chart',
+          aggs: index_move_by_month,
+          name: 'Monthly Index Move',
+          layer: 1
+        },
+        {
+          chart_id: 'monthly-volume-chart',
+          aggs: volume_by_month_group_agg,
+          layer: 0
+        }
+      ]
+    }
+  ]
+}.deep_freeze
