@@ -1,8 +1,9 @@
-require_relative 'common'
+require_relative 'lib/common'
 require 'hashie/mash'
 require 'json'
 
-require_relative 'utils'
+require_relative 'lib/result_helpers'
+require_relative 'lib/query_helpers'
 require_relative 'conf'
 
 search_client = init_search_client

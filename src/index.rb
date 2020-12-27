@@ -1,4 +1,4 @@
-require_relative 'common'
+require_relative 'lib/common'
 
 search_client = init_search_client
 
