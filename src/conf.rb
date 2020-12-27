@@ -130,7 +130,11 @@ CONF = {
       dimension: quarter_dimension,
       aggs: quarter_chart_agg
     },
-    { chart_id: 'fluctuation-chart', dimension: fluctuation_dimension },
+    {
+      chart_id: 'fluctuation-chart',
+      dimension: fluctuation_dimension,
+      layer: 0
+    },
     {
       dimension: month_dimension,
       charts: [
