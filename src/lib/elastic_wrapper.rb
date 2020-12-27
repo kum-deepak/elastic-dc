@@ -31,6 +31,10 @@ class ElasticWrapper
   def call(env)
     output = self.query([])
 
-    [200, { 'content-type' => 'application/json' }, [output.to_json]]
+    response =  Rack::Response.new
+    response.set_header  'content-type', 'application/json'
+    response.write output.to_json
+
+    response.finish
   end
 end
