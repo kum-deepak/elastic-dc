@@ -51,6 +51,9 @@ def prep_elastic_query(entry)
       # the meta entries are returned by Elastic as part of the results.
       # These are used to arrange the output for specific charts
       meta = chart_conf.slice(:chart_id, :layer, :name)
+
+      # If there is a layer, ensure it has a name (as string)
+      meta[:name] = "#{meta[:layer]}" if meta.key?(:layer) && !meta.key?(:name)
       aggs_entry = { meta: meta }
 
       aggs_entry = aggs_entry.merge(dim_conf)
