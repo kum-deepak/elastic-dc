@@ -32,8 +32,9 @@ def extract_result(result)
         .map { |bucket| flatten_bucket(bucket) }
         .sort_by { |b| b[:key] }
 
-    extracted = { "chartId": res['meta']['chartId'], "values": data }
-    extracted[:layer] = res['meta']['layer'] if res['meta']['layer']
+    extracted = res['meta']
+    extracted['chartId'] = extracted.delete('chart_id')
+    extracted['values'] = data
 
     extracted
   end
@@ -49,8 +50,7 @@ def prep_elastic_query(entry)
     charts.map do |chart_conf|
       # the meta entries are returned by Elastic as part of the results.
       # These are used to arrange the output for specific charts
-      meta = { chartId: chart_conf[:chart_id] }
-      meta[:layer] = chart_conf[:layer] if chart_conf.key? :layer
+      meta = chart_conf.slice(:chart_id, :layer, :name)
       aggs_entry = { meta: meta }
 
       aggs_entry = aggs_entry.merge(dim_conf)

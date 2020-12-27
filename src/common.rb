@@ -2,6 +2,7 @@ require 'bundler/setup'
 require 'elasticsearch'
 require 'csv'
 require 'active_support/core_ext/date'
+require 'active_support/core_ext/hash'
 
 ELASTIC_URL = 'http://localhost:9200'.freeze
 INDEX = 'stocks'.freeze

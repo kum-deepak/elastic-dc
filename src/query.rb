@@ -7,13 +7,13 @@ require_relative 'conf'
 
 search_client = init_search_client
 
-flattened =
+extracted =
   CONF[4..5].map do |conf|
     qry = prep_elastic_query(conf)
     results = search_client.search(index: INDEX, body: qry.to_json)
     extract_result(results)
   end
 
-puts flattened.to_json
+puts extracted.flatten.to_json
 
 # results = search_client.msearch(index: INDEX, body: [{ search: qry }])
