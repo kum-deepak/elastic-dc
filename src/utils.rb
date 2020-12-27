@@ -25,41 +25,47 @@ def flatten_bucket(bucket)
   { key: key, value: hash }
 end
 
-def flatten_results(results)
-  chart_id = results['aggregations'].keys.first
-  res = results['aggregations'][chart_id]
-  data =
-    res['buckets']
-      .map { |bucket| flatten_bucket(bucket) }
-      .sort_by { |b| b[:key] }
+def extract_result(result)
+  result['aggregations'].values.map do |res|
+    data =
+      res['buckets']
+        .map { |bucket| flatten_bucket(bucket) }
+        .sort_by { |b| b[:key] }
 
-  flattened = { "chartId": res['meta']['chartId'], "values": data }
+    extracted = { "chartId": res['meta']['chartId'], "values": data }
+    extracted[:layer] = res['meta']['layer'] if res['meta']['layer']
 
-  flattened[:layer] = res['meta']['layer'] if res['meta']['layer']
-
-  flattened
+    extracted
+  end
 end
 
-def prep_elastic_query(chart_conf)
-  if chart_conf[:charts]
-    chart_conf[:charts].each_with_index.map do |layer, i|
-      meta = { chartId: layer[:chart_id] }
-      meta[:layer] = layer[:layer] if layer.key? :layer
-      aggs_conf = { meta: meta }
+def prep_elastic_query(entry)
+  dim_conf = entry[:dimension]
 
-      aggs_conf = aggs_conf.merge(chart_conf[:dimension])
+  # sometimes more than one 'groups' can be associated with the same dimension
+  charts = entry[:charts] ? entry[:charts] : [entry]
 
-      aggs_conf[:aggs] = layer[:aggs] if layer[:aggs]
+  agg_entries =
+    charts.map do |chart_conf|
+      # the meta entries are returned by Elastic as part of the results.
+      # These are used to arrange the output for specific charts
+      meta = { chartId: chart_conf[:chart_id] }
+      meta[:layer] = chart_conf[:layer] if chart_conf.key? :layer
+      aggs_entry = { meta: meta }
 
-      { size: 0, aggs: { "#{i}" => aggs_conf } }
+      aggs_entry = aggs_entry.merge(dim_conf)
+
+      aggs_entry[:aggs] = chart_conf[:aggs] if chart_conf[:aggs]
+
+      aggs_entry
     end
-  else
-    aggs_conf = { meta: { chartId: chart_conf[:chart_id] } }
 
-    aggs_conf = aggs_conf.merge(chart_conf[:dimension])
+  # Make a Hash like {"0" => {...}, "1" => {...}}
+  aggs =
+    Hash[
+      agg_entries.each_with_index.map { |aggs_entry, i| ["#{i}", aggs_entry] }
+    ]
 
-    aggs_conf[:aggs] = chart_conf[:aggs] if chart_conf[:aggs]
-
-    [{ size: 0, aggs: { '0' => aggs_conf } }]
-  end
+  # size: 0 instructs Elastic to not return any rows, it will ony return the aggregates
+  { size: 0, aggs: aggs }
 end
