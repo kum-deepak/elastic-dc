@@ -33,6 +33,8 @@ GEM
     puma (5.1.1)
       nio4r (~> 2.0)
     rack (2.2.3)
+    rack-contrib (2.3.0)
+      rack (~> 2.0)
     rack-cors (1.1.1)
       rack (>= 2.0.0)
     ruby2_keywords (0.0.2)
@@ -53,6 +55,7 @@ DEPENDENCIES
   prettier (~> 1.1.0)
   puma (~> 5.1.1)
   rack (~> 2.2.3)
+  rack-contrib (~> 2.3.0)
   rack-cors (~> 1.1.1)
   typhoeus (~> 1.3.1)
 

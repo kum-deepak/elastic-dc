@@ -1,4 +1,5 @@
 require 'rack'
+require 'json'
 
 require_relative 'result_helpers'
 require_relative 'query_helpers'
@@ -14,6 +15,8 @@ class ElasticWrapper
   end
 
   def query(filters)
+    LOGGER.info(filters)
+
     raw_results =
       @search_client.msearch(
         index: INDEX,
@@ -29,10 +32,19 @@ class ElasticWrapper
   end
 
   def call(env)
-    output = self.query([])
+    request = Rack::Request.new(env)
 
-    response =  Rack::Response.new
-    response.set_header  'content-type', 'application/json'
+    filters = request.params['filters']
+    output = self.query(filters)
+
+    respond_json(output)
+  end
+
+  private
+
+  def respond_json(output)
+    response = Rack::Response.new
+    response.set_header 'content-type', 'application/json'
     response.write output.to_json
 
     response.finish

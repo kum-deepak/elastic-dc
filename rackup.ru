@@ -2,6 +2,7 @@ require 'rack'
 require 'rack/cors'
 require 'rack/request'
 require 'rack/response'
+require 'rack/contrib/json_body_parser'
 
 require_relative 'src/conf'
 require_relative 'src/common'
@@ -17,6 +18,7 @@ app = Rack::Builder.app do
       resource '*', headers: :any, methods: [:get, :post, :patch, :put]
     end
   end
+  use Rack::JSONBodyParser
 
   run ElasticWrapper.new(CONF, search_client)
 end
