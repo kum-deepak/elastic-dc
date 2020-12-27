@@ -4,7 +4,7 @@ require 'rack/request'
 require 'rack/response'
 
 require_relative 'src/conf'
-require_relative 'src/lib/common'
+require_relative 'src/common'
 require_relative 'src/lib/elastic_wrapper'
 
 search_client = init_search_client

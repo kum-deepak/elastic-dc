@@ -1,4 +1,4 @@
-require_relative 'lib/common'
+require_relative 'common'
 require 'json'
 
 require_relative 'lib/result_helpers'

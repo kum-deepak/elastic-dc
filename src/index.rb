@@ -1,4 +1,4 @@
-require_relative 'lib/common'
+require_relative 'common'
 require 'csv'
 require 'active_support/core_ext/date'
 
