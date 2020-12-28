@@ -1,5 +1,9 @@
+# Elastic returns 10 buckets by default, to avoid that set a high enough size
+BKTS = 10_000
+
 def prep_elastic_query(entry, value_accessors)
-  dim_conf = entry[:dimension]
+  dimension = entry[:dimension]
+  dim_conf = { terms: { field: dimension, size: BKTS } }
 
   # sometimes more than one 'groups' can be associated with the same dimension
   charts = entry[:charts] ? entry[:charts] : [entry]
@@ -34,5 +38,5 @@ def prep_elastic_query(entry, value_accessors)
     ]
 
   # size: 0 instructs Elastic to not return any rows, it will ony return the aggregates
-  { size: 0, aggs: aggs }
+  [dimension, { size: 0, aggs: aggs }]
 end

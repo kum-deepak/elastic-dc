@@ -1,8 +1,5 @@
 require 'deep-freeze'
 
-# Elastic returns 10 buckets by default, to avoid that set a high enough size
-BKTS = 10_000
-
 # DIMENSIONS
 
 # A dimension will get aggregated based on unique values. In final output
@@ -15,12 +12,16 @@ BKTS = 10_000
 # It is likely that dimensions will be based on term
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html
 
-yearly_dimension = { terms: { field: 'year', size: BKTS } }.freeze
-gain_or_loss_dimension = { terms: { field: 'gain_or_loss', size: BKTS } }.freeze
-quarter_dimension = { terms: { field: 'quarter', size: BKTS } }.freeze
-fluctuation_dimension = { terms: { field: 'fluctuation', size: BKTS } }.freeze
-day_of_week_dimension = { terms: { field: 'day_of_week', size: BKTS } }.freeze
-month_dimension = { terms: { field: 'month', size: BKTS } }.freeze
+# These will get converted to term aggregations like
+# { terms: { field: 'year', size: 10000 } }
+#
+# These must be fields as per index definitions
+yearly_dimension = 'year'
+gain_or_loss_dimension = 'gain_or_loss'
+quarter_dimension = 'quarter'
+fluctuation_dimension = 'fluctuation'
+day_of_week_dimension = 'day_of_week'
+month_dimension = 'month'
 
 # CUSTOM AGGREGATIONS (similar to Crossfilter custom Groups)
 
