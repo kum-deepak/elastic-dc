@@ -2,6 +2,7 @@ require_relative 'common'
 require 'csv'
 require 'active_support/core_ext/date'
 
+INDEX = 'stocks'.freeze
 search_client = init_search_client
 
 # Delete any existing indices, so that it does not interfere with existing data or schema

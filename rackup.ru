@@ -6,7 +6,7 @@ require 'rack/contrib/json_body_parser'
 
 require_relative 'src/conf'
 require_relative 'src/common'
-require_relative 'src/lib/elastic_wrapper'
+require_relative 'src/lib/elastic_wrapper_rack_app'
 
 search_client = init_search_client
 
@@ -20,7 +20,7 @@ app = Rack::Builder.app do
   end
   use Rack::JSONBodyParser
 
-  run ElasticWrapper.new(CONF, search_client)
+  run ElasticWrapperRackApp.new(CONF, search_client)
 end
 
 run app

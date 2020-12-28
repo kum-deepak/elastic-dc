@@ -1,9 +1,9 @@
 # Elastic returns 10 buckets by default, to avoid that set a high enough size
-BKTS = 10_000
+MAX_BUCKETS = 10_000
 
 def prep_elastic_query(entry, value_accessors)
   dimension = entry[:dimension]
-  dim_conf = { terms: { field: dimension, size: BKTS } }
+  dim_conf = { terms: { field: dimension, size: MAX_BUCKETS } }
 
   # sometimes more than one 'groups' can be associated with the same dimension
   charts = entry[:charts] ? entry[:charts] : [entry]
@@ -39,4 +39,73 @@ def prep_elastic_query(entry, value_accessors)
 
   # size: 0 instructs Elastic to not return any rows, it will ony return the aggregates
   [dimension, { size: 0, aggs: aggs }]
+end
+
+# filters from dc
+#
+# [{"chartId"=>"yearly-bubble-chart", "filterType"=>"Simple", "values"=>[1996]},
+# {"chartId"=>"fluctuation-chart", "filterType"=>"RangedFilter", "values"=>[[-1, 5]]}]
+
+# dc-to-elastic query predicate
+def elastic_qry_predicate(dimension, filter)
+  filter_type = filter['filterType']
+  values = filter['values']
+
+  filter_clause =
+    case filter_type
+    when 'Simple'
+      { terms: { dimension => values } }
+    when 'RangedFilter'
+      low, high = values[0]
+
+      # https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#filterrange-does-not-include-the-top-point
+      { range: { dimension => { gte: low, lt: high } } }
+    end
+
+  [dimension, filter_clause]
+end
+
+# From chart_ids, find dimensions
+def associate_dimensions(filters, prepared_queries)
+  filters.map do |filter|
+    dimension, _ =
+      prepared_queries.find do |_, q|
+        (q[:aggs].values.map { |e| e[:meta][:chart_id] }).include?(
+          filter['chartId']
+        )
+      end
+
+    [dimension, filter]
+  end
+end
+
+# https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#a-group-does-not-observe-its-dimensions-filters
+# This method emulates the behavior
+def adjust_filters_for_dimension(dimension, filters_info)
+  filters_info.reject { |dim, _| dim == dimension }
+end
+
+# Query fragment to Elastic
+#
+# {
+#   query: {
+#     bool: {
+#       filter: [
+#         { terms: { year: [1999, 2000] } },
+#         { terms: { quarter: ['Q4'] } },
+#         {
+#           range: {
+#             'month' => {
+#               gte: '1992-03-24T19:55:24.342Z',
+#               lt: '2006-11-18T20:59:16.312Z'
+#             }
+#           }
+#         }
+#       ]
+#     }
+#   }
+# }
+def filter_to_elastic_query(applicable_clauses)
+  applicable_clauses = applicable_clauses.map { |_, f| f }
+  { "query": { "bool": { "filter": applicable_clauses } } }
 end

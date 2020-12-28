@@ -115,6 +115,7 @@ yearly_bubble_chart_agg = {
 CONF = {
   # whether to include selected/total row-counts
   counts: true,
+  index: 'stocks',
   charts: [
     {
       dimension: yearly_dimension,
