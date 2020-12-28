@@ -50,9 +50,7 @@ def extract_result(result, value_accessors)
 end
 
 def extract_results(raw_results, value_accessors)
-  raw_results['responses'].map do |result|
-    extract_result(result, value_accessors)
-  end.flatten
+  raw_results.map { |result| extract_result(result, value_accessors) }.flatten
 end
 
 def format_results(extracted_results)

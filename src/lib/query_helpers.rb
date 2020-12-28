@@ -105,7 +105,7 @@ end
 #     }
 #   }
 # }
-def filter_to_elastic_query(applicable_clauses)
+def filters_to_elastic_query(applicable_clauses)
   applicable_clauses = applicable_clauses.map { |_, f| f }
   { "query": { "bool": { "filter": applicable_clauses } } }
 end
