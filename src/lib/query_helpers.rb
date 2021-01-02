@@ -3,7 +3,9 @@ MAX_BUCKETS = 10_000
 
 def prep_elastic_query(entry, value_accessors)
   dimension = entry[:dimension]
-  dim_conf = { terms: { field: dimension, size: MAX_BUCKETS, min_doc_count: 0 } }
+  dim_conf = {
+    terms: { field: dimension, size: MAX_BUCKETS, min_doc_count: 0 }
+  }
 
   # sometimes more than one 'groups' can be associated with the same dimension
   charts = entry[:charts] ? entry[:charts] : [entry]

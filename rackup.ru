@@ -10,19 +10,26 @@ require_relative 'src/lib/elastic_wrapper_rack_app'
 
 search_client = init_search_client
 
-app = Rack::Builder.app do
-  use Rack::CommonLogger
-  use Rack::Cors do
-    allow do
-      origins '*'
-      resource '*', headers: :any, methods: [:get, :post, :patch, :put]
+app =
+  Rack::Builder.app do
+    # enable Apache type access log (optional)
+    use Rack::CommonLogger
+
+    # Enable CORS - needed for access through cross origin API access
+    # The resource and methods may be setup be narrower
+    use Rack::Cors do
+      allow do
+        origins '*'
+        resource '*', headers: :any, methods: %i[get post patch put]
+      end
+    end
+
+    map '/api/stock' do
+      # The filters are passed as JSON body, this one parses the JSON body
+      use Rack::JSONBodyParser
+
+      run ElasticWrapperRackApp.new(CONF, search_client)
     end
   end
-  use Rack::JSONBodyParser
-
-  run ElasticWrapperRackApp.new(CONF, search_client)
-end
 
 run app
-
-
