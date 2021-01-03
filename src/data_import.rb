@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require_relative 'common'
 require 'csv'
 require 'active_support/core_ext/date'
@@ -5,40 +6,12 @@ require 'active_support/core_ext/date'
 INDEX = 'stocks'.freeze
 search_client = init_search_client
 
-# Delete any existing indices, so that it does not interfere with existing data or schema
-search_client.indices.delete(index: '*')
-
-search_client.indices.create(
-  index: INDEX,
-  body: { settings: { index: { number_of_shards: 1, number_of_replicas: 0 } } }
-)
-
-filed_mappings = {
-  "dynamic": 'strict',
-  "properties": {
-    "id": { "type": 'integer' },
-    "date": { "type": 'date' },
-    "open": { "type": 'double' },
-    "close": { "type": 'double' },
-    "high": { "type": 'double' },
-    "low": { "type": 'double' },
-    "volume": { "type": 'integer' },
-    "quarter": { "type": 'keyword' },
-    "year": { "type": 'integer' },
-    "month": { "type": 'date' },
-    "gain_or_loss": { "type": 'keyword' },
-    "fluctuation": { "type": 'integer' },
-    "day_of_week": { "type": 'keyword' }
-  }
-}
-
-search_client.indices.put_mapping(index: INDEX, body: filed_mappings)
-
 rows = CSV.parse(File.open('data/ndx.csv'), headers: true)
 
 processed_rows =
   rows.map do |row|
     # convert to simple Ruby Hash (from CSV specific Object)
+    # Needed for JSON serialization to work properly.
     row = row.to_h
 
     row.delete('oi') # not required
@@ -61,7 +34,6 @@ processed_rows =
       (((row['close'] - row['open']) / row['open']) * 100).round
     row['day_of_week'] = dt.strftime('%w.%a') # '5.Fri'
 
-    # search_client.index(id: i, index: 'stocks', body: row.to_h.to_json)
     row
   end
 
@@ -71,4 +43,6 @@ body =
     { 'index': { _id: i, data: row } }
   end
 
+# https://rubydoc.info/gems/elasticsearch-api/Elasticsearch/API/Actions#bulk-instance_method
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docs-bulk.html
 search_client.bulk(index: INDEX, body: body)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'result_helpers'
 require_relative 'query_helpers'
 
@@ -32,6 +34,7 @@ class ElasticWrapper
 
     add_queries_for_counts(filter_predicates, queries_with_filters)
 
+    # https://rubydoc.info/gems/elasticsearch-api/Elasticsearch/API/Actions#msearch-instance_method
     qry_result =
       @search_client.msearch(
         index: @conf[:index],

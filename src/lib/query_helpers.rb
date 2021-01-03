@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Elastic returns 10 buckets by default, to avoid that set a high enough size
 MAX_BUCKETS = 10_000
 

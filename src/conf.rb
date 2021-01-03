@@ -1,6 +1,7 @@
+# frozen_string_literal: true
 require 'deep-freeze'
 
-# DIMENSIONS
+# DIMENSIONS & GROUPS
 
 # A dimension will get aggregated based on unique values. In final output
 # `key` will be value of the dimension. By default number of matched documents
@@ -15,13 +16,7 @@ require 'deep-freeze'
 # These will get converted to term aggregations like
 # { terms: { field: 'year', size: 10000 } }
 #
-# These must be fields as per index definitions
-yearly_dimension = 'year'
-gain_or_loss_dimension = 'gain_or_loss'
-quarter_dimension = 'quarter'
-fluctuation_dimension = 'fluctuation'
-day_of_week_dimension = 'day_of_week'
-month_dimension = 'month'
+# Each Dimension must be a field as per index definition.
 
 # CUSTOM AGGREGATIONS (similar to Crossfilter custom Groups)
 
@@ -77,7 +72,7 @@ index_avg_by_month_agg = {
   }
 }
 
-# creating agg for these (from stock.js example)
+# creating aggregation for these (from stock.js example)
 # p.absGain += v.close - v.open;
 # p.fluctuation += Math.abs(v.close - v.open);
 # p.sumIndex += (v.open + v.close) / 2;
@@ -118,27 +113,30 @@ CONF = {
   index: 'stocks',
   charts: [
     {
-      dimension: yearly_dimension,
+      dimension: 'year',
       chart_id: 'yearly-bubble-chart',
       aggs: yearly_bubble_chart_agg,
       # valueAccessor: p => p.value.percentageGain
       # The result processing functions use all keys as strings (not symbols)
       value_accessor: ->(p) { p['value']['percentageGain'] }
     },
-    { chart_id: 'gain-loss-chart', dimension: gain_or_loss_dimension },
-    { chart_id: 'day-of-week-chart', dimension: day_of_week_dimension },
+    { chart_id: 'gain-loss-chart', dimension: 'gain_or_loss' },
+    { chart_id: 'day-of-week-chart', dimension: 'day_of_week' },
     {
       chart_id: 'quarter-chart',
-      dimension: quarter_dimension,
+      dimension: 'quarter',
       aggs: quarter_chart_agg
     },
+    # For stack based charts `layer` must be set.
+    # If there are more than one layer, these will have values 0, 1, 2, ...
+    { chart_id: 'fluctuation-chart', dimension: 'fluctuation', layer: 0 },
+    # It is possible to link more than one chart to the same dimension.
+    # In this case, two layers of 'monthly-move-chart' and one layer of 'monthly-volume-chart'
+    # are attached to the same dimension.
+    #
+    # `name` must be set in case there are more than one layer for a chart.
     {
-      chart_id: 'fluctuation-chart',
-      dimension: fluctuation_dimension,
-      layer: 0
-    },
-    {
-      dimension: month_dimension,
+      dimension: 'month',
       charts: [
         {
           chart_id: 'monthly-move-chart',
@@ -162,4 +160,4 @@ CONF = {
       ]
     }
   ]
-}.deep_freeze
+}.deep_freeze # make this Object immutable
