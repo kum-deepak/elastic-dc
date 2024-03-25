@@ -73,10 +73,8 @@ end
 def associate_dimensions(filters, prepared_queries)
   filters.map do |filter|
     dimension, _ =
-      prepared_queries.find do |_, q|
-        (q[:aggs].values.map { |e| e[:meta][:chart_id] }).include?(
-          filter['chartId']
-        )
+      prepared_queries.find do |dimName, q|
+        dimName == filter['chartId']
       end
 
     [dimension, filter]
