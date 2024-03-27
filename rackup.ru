@@ -12,9 +12,6 @@ search_client = init_search_client
 
 app =
   Rack::Builder.app do
-    # enable Apache type access log (optional)
-    use Rack::CommonLogger
-
     # Enable CORS - needed for access through cross origin API access
     # The resource and methods may be setup be narrower
     use Rack::Cors do
