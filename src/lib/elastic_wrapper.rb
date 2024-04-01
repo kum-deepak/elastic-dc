@@ -8,13 +8,11 @@ class ElasticWrapper
     @conf = conf
     @search_client = search_client
 
-    @value_accessors = []
     @prepared_queries =
       @conf[:charts].map do |chart_conf|
-        prep_elastic_query(chart_conf, @value_accessors)
+        prep_elastic_query(chart_conf)
       end
 
-    @value_accessors.deep_freeze
     @prepared_queries.deep_freeze
   end
 
@@ -47,7 +45,7 @@ class ElasticWrapper
 
     all_count, selected_count = extract_counts(filter_predicates, raw_results)
 
-    extracted_results = extract_results(raw_results, @value_accessors)
+    extracted_results = extract_results(raw_results)
     formatted = format_results(extracted_results)
 
     {

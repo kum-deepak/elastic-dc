@@ -27,7 +27,7 @@ def flatten_bucket(bucket)
   { 'key' => key, 'value' => hash }
 end
 
-def extract_result(result, value_accessors)
+def extract_result(result)
   result['aggregations'].values.map do |res|
     data =
       res['buckets']
@@ -37,22 +37,14 @@ def extract_result(result, value_accessors)
     extracted = res['meta']
     extracted['chartId'] = extracted.delete('chart_id')
 
-    # value_accessor
-    if extracted.key?('value_accessor')
-      value_accessor = value_accessors[extracted.delete('value_accessor').to_i]
-      data.each { |d| d['_value'] = value_accessor.call(d) }
-    else
-      data.each { |d| d['_value'] = d['value'] }
-    end
-
     extracted['values'] = data
 
     extracted
   end
 end
 
-def extract_results(raw_results, value_accessors)
-  raw_results.map { |result| extract_result(result, value_accessors) }.flatten
+def extract_results(raw_results)
+  raw_results.map { |result| extract_result(result) }.flatten
 end
 
 def format_results(extracted_results)

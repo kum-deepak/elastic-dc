@@ -3,7 +3,7 @@
 # Elastic returns 10 buckets by default, to avoid that set a high enough size
 MAX_BUCKETS = 10_000
 
-def prep_elastic_query(entry, value_accessors)
+def prep_elastic_query(entry)
   dimension = entry[:dimension]
   dim_conf = {
     terms: { field: dimension, size: MAX_BUCKETS, min_doc_count: 0 }
@@ -17,12 +17,6 @@ def prep_elastic_query(entry, value_accessors)
       # the meta entries are returned by Elastic as part of the results.
       # These are used to arrange the output for specific charts
       meta = chart_conf.slice(:chart_id, :layer, :name)
-
-      if chart_conf[:value_accessor]
-        # replace the lambda by the index where it is getting stored
-        value_accessors.push(chart_conf[:value_accessor])
-        meta[:value_accessor] = value_accessors.size - 1
-      end
 
       # If there is a layer, ensure it has a name (as string)
       meta[:name] = "#{meta[:layer]}" if meta.key?(:layer) && !meta.key?(:name)
