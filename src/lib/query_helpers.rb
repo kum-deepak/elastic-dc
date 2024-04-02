@@ -3,40 +3,30 @@
 # Elastic returns 10 buckets by default, to avoid that set a high enough size
 MAX_BUCKETS = 10_000
 
-def prep_elastic_query(entry)
-  dimension = entry[:dimension]
-  dim_conf = {
-    terms: { field: dimension, size: MAX_BUCKETS, min_doc_count: 0 }
-  }
+def prep_elastic_query(dimension, groups, dims_and_groups)
+  dim_conf = { terms: { field: dimension, size: MAX_BUCKETS, min_doc_count: 0 } }
 
   # sometimes more than one 'groups' can be associated with the same dimension
-  charts = entry[:charts] ? entry[:charts] : [entry]
+  groups = [groups].flatten
 
-  agg_entries =
-    charts.map do |chart_conf|
+  queries =
+    groups.map do |group|
       # the meta entries are returned by Elastic as part of the results.
       # These are used to arrange the output for specific charts
-      meta = chart_conf.slice(:chart_id, :layer, :name)
+      query = {meta: { dimId: dimension, groupId: group }}
 
-      # If there is a layer, ensure it has a name (as string)
-      meta[:name] = "#{meta[:layer]}" if meta.key?(:layer) && !meta.key?(:name)
-      aggs_entry = { meta: meta }
+      query = query.merge(dim_conf)
 
-      aggs_entry = aggs_entry.merge(dim_conf)
+      query[:aggs] = dims_and_groups[dimension][group] if dims_and_groups[dimension][group]
 
-      aggs_entry[:aggs] = chart_conf[:aggs] if chart_conf[:aggs]
-
-      aggs_entry
+      query
     end
 
   # Make a Hash like {"0" => {...}, "1" => {...}}
-  aggs =
-    Hash[
-      agg_entries.each_with_index.map { |aggs_entry, i| ["#{i}", aggs_entry] }
-    ]
+  aggs = Hash[queries.each_with_index.map { |query, i| ["#{i}", query] }]
 
   # size: 0 instructs Elastic to not return any rows, it will ony return the aggregates
-  [dimension, { size: 0, aggs: aggs }]
+  { size: 0, aggs: aggs }
 end
 
 # filters from dc
@@ -45,7 +35,8 @@ end
 # {"chartId"=>"fluctuation-chart", "filterType"=>"RangedFilter", "values"=>[[-1, 5]]}]
 
 # dc-to-elastic query predicate
-def elastic_qry_predicate(dimension, filter)
+def elastic_qry_predicate(filter)
+  dimension = filter['dimId']
   filter_type = filter['filterType']
   values = filter['values']
 
@@ -58,21 +49,11 @@ def elastic_qry_predicate(dimension, filter)
 
       # https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#filterrange-does-not-include-the-top-point
       { range: { dimension => { gte: low, lt: high } } }
+    else
+      raise new Error("Unknown filter type: #{filter_type}")
     end
 
   [dimension, filter_clause]
-end
-
-# From chart_ids, find dimensions
-def associate_dimensions(filters, prepared_queries)
-  filters.map do |filter|
-    dimension, _ =
-      prepared_queries.find do |dimName, q|
-        dimName == filter['chartId']
-      end
-
-    [dimension, filter]
-  end
 end
 
 # https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#a-group-does-not-observe-its-dimensions-filters
@@ -103,5 +84,5 @@ end
 # }
 def filters_to_elastic_query(applicable_clauses)
   applicable_clauses = applicable_clauses.map { |_, f| f }
-  { "query": { "bool": { "filter": applicable_clauses } } }
+  { query: { bool: { filter: applicable_clauses } } }
 end

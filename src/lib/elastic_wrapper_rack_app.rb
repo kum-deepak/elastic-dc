@@ -10,7 +10,8 @@ class ElasticWrapperRackApp < ElasticWrapper
     request = Rack::Request.new(env)
 
     filters = request.params['filters']
-    output = self.query(filters)
+    queries = request.params['queries']
+    output = self.query(filters, queries)
 
     respond_json(output)
   end

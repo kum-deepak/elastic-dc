@@ -35,22 +35,14 @@ require 'deep-freeze'
 #       }
 # Equivalent to the following from stock.js
 # quarter.group().reduceSum(d => d.volume)
-quarter_chart_agg = { only_me: { sum: { field: 'volume' } } }
+quarter_chart_agg = { only_me: { sum: { field: 'volume' } } }.deep_freeze
 
 # moveMonths.group().reduceSum(d => Math.abs(d.close - d.open))
-index_move_by_month = {
-  only_me: {
-    sum: {
-      "script": { "source": 'Math.abs( doc.close.value - doc.open.value )' }
-    }
-  }
-}
+index_move_by_month = { only_me: { sum: { script: { source: 'Math.abs( doc.close.value - doc.open.value )' } } } }.deep_freeze
 
 # moveMonths.group().reduceSum(d => d.volume / 500000);
 # Since volume is integer as per index definition, it is important to use 500000.0 to avoid integer division
-volume_by_month_group_agg = {
-  only_me: { sum: { "script": { "source": 'doc.volume.value / 500000.0' } } }
-}
+volume_by_month_group_agg = { only_me: { sum: { script: { source: 'doc.volume.value / 500000.0' } } } }.deep_freeze
 
 # ++p.days;
 # p.total += (v.open + v.close) / 2;
@@ -62,15 +54,21 @@ volume_by_month_group_agg = {
 # For example, in this case after computing average, it is rounded
 index_avg_by_month_agg = {
   avg_without_rounding: {
-    avg: { "script": { "source": '( doc.open.value + doc.close.value ) / 2' } }
+    avg: {
+      script: {
+        source: '( doc.open.value + doc.close.value ) / 2',
+      },
+    },
   },
   avg: {
     bucket_script: {
-      buckets_path: { avg_without_rounding: 'avg_without_rounding' },
-      script: 'Math.round(params.avg_without_rounding)'
-    }
-  }
-}
+      buckets_path: {
+        avg_without_rounding: 'avg_without_rounding',
+      },
+      script: 'Math.round(params.avg_without_rounding)',
+    },
+  },
+}.deep_freeze
 
 # creating aggregation for these (from stock.js example)
 # p.absGain += v.close - v.open;
@@ -81,78 +79,73 @@ index_avg_by_month_agg = {
 # p.fluctuationPercentage = p.avgIndex ? (p.fluctuation / p.avgIndex) * 100 : 0;
 yearly_bubble_chart_agg = {
   avgIndex: {
-    avg: { "script": { "source": '( doc.open.value + doc.close.value ) / 2' } }
+    avg: {
+      script: {
+        source: '( doc.open.value + doc.close.value ) / 2',
+      },
+    },
   },
   absGain: {
-    sum: { "script": { "source": '( doc.close.value - doc.open.value )' } }
+    sum: {
+      script: {
+        source: '( doc.close.value - doc.open.value )',
+      },
+    },
   },
   fluctuation: {
     sum: {
-      "script": { "source": 'Math.abs( doc.close.value - doc.open.value )' }
-    }
+      script: {
+        source: 'Math.abs( doc.close.value - doc.open.value )',
+      },
+    },
   },
   percentageGain: {
     bucket_script: {
-      buckets_path: { avgIndex: 'avgIndex', absGain: 'absGain' },
-      script: 'params.absGain / params.avgIndex * 100'
-    }
+      buckets_path: {
+        avgIndex: 'avgIndex',
+        absGain: 'absGain',
+      },
+      script: 'params.absGain / params.avgIndex * 100',
+    },
   },
   fluctuationPercentage: {
     bucket_script: {
-      buckets_path: { avgIndex: 'avgIndex', fluctuation: 'fluctuation' },
-      script: 'params.fluctuation / params.avgIndex * 100'
-    }
-  }
-}
+      buckets_path: {
+        avgIndex: 'avgIndex',
+        fluctuation: 'fluctuation',
+      },
+      script: 'params.fluctuation / params.avgIndex * 100',
+    },
+  },
+}.deep_freeze
 
 # Only the CONF is used outside this file
-
 CONF = {
   # whether to include selected/total row-counts
   counts: true,
   index: 'stocks',
-  charts: [
-    {
-      dimension: 'year',
-      chart_id: 'yearly-bubble-chart',
-      aggs: yearly_bubble_chart_agg,
+  # dim_id as key and then group_id as key and aggregation as value
+  # use nil as aggregation if we need the default group (the matched count)
+  'dims_and_groups' => {
+    'year' => {
+      'yearly_performance' => yearly_bubble_chart_agg,
     },
-    { chart_id: 'gain-loss-chart', dimension: 'gain_or_loss' },
-    { chart_id: 'day-of-week-chart', dimension: 'day_of_week' },
-    {
-      chart_id: 'quarter-chart',
-      dimension: 'quarter',
-      aggs: quarter_chart_agg
+    'gain_or_loss' => {
+      'gain_or_loss' => nil,
     },
-    # For stack based charts `layer` must be set.
-    # If there are more than one layer, these will have values 0, 1, 2, ...
-    { chart_id: 'fluctuation-chart', dimension: 'fluctuation', layer: 0 },
-    # It is possible to link more than one chart to the same dimension.
-    # In this case, two layers of 'monthly-move-chart' and one layer of 'monthly-volume-chart'
-    # are attached to the same dimension.
-    #
-    # `name` must be set in case there are more than one layer for a chart.
-    {
-      dimension: 'month',
-      charts: [
-        {
-          chart_id: 'monthly-move-chart',
-          aggs: index_avg_by_month_agg,
-          name: 'Monthly Index Average',
-          layer: 0
-        },
-        {
-          chart_id: 'monthly-move-chart',
-          aggs: index_move_by_month,
-          name: 'Monthly Index Move',
-          layer: 1
-        },
-        {
-          chart_id: 'monthly-volume-chart',
-          aggs: volume_by_month_group_agg,
-          layer: 0
-        }
-      ]
-    }
-  ]
+    'quarter' => {
+      'quarter' => quarter_chart_agg,
+    },
+    'day_of_week' => {
+      'day_of_week' => nil,
+    },
+    'fluctuation' => {
+      'fluctuation' => nil,
+    },
+    'month' => {
+      'index_avg_by_month' => index_avg_by_month_agg,
+      'index_move_by_month' => index_move_by_month,
+      'volume_by_month' => volume_by_month_group_agg,
+    },
+  },
 }.deep_freeze # make this Object immutable

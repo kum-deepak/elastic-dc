@@ -1,12 +1,7 @@
 # frozen_string_literal: true
 
 def flatten_bucket(bucket)
-  hash =
-    Hash[
-      bucket.map do |k, v|
-        [k, v.instance_of?(Hash) && v.key?('value') ? v['value'] : v]
-      end
-    ]
+  hash = Hash[bucket.map { |k, v| [k, v.instance_of?(Hash) && v.key?('value') ? v['value'] : v] }]
 
   key = hash.delete('key')
 
@@ -29,39 +24,13 @@ end
 
 def extract_result(result)
   result['aggregations'].values.map do |res|
-    data =
-      res['buckets']
-        .map { |bucket| flatten_bucket(bucket) }
-        .sort_by { |b| b['key'] }
+    chart_data = { values: res['buckets'].map { |bucket| flatten_bucket(bucket) }.sort_by { |b| b['key'] } }
 
-    extracted = res['meta']
-    extracted['chartId'] = extracted.delete('chart_id')
-
-    extracted['values'] = data
-
-    extracted
+    # the res['meta'] will have dimId and groupId
+    res['meta'].merge(chart_data)
   end
 end
 
 def extract_results(raw_results)
   raw_results.map { |result| extract_result(result) }.flatten
-end
-
-def format_results(extracted_results)
-  extracted_results
-    .group_by { |e| e['chartId'] }
-    .map do |chart_id, results|
-      if results.size == 1 && !results[0].key?('layer')
-        results[0]
-      else
-        # the chart expects layers, prepare the data accordingly
-        layers = results.sort_by { |e| e['layer'] }
-
-        {
-          'chartId' => chart_id,
-          'values' =>
-            layers.map { |r| { 'name' => r['name'], 'rawData' => r['values'] } }
-        }
-      end
-    end
 end

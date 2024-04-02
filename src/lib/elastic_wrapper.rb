@@ -7,25 +7,18 @@ class ElasticWrapper
   def initialize(conf, search_client)
     @conf = conf
     @search_client = search_client
-
-    @prepared_queries =
-      @conf[:charts].map do |chart_conf|
-        prep_elastic_query(chart_conf)
-      end
-
-    @prepared_queries.deep_freeze
   end
 
-  def query(filters)
-    filter_predicates =
-      associate_dimensions(filters, @prepared_queries)
-        .map { |dimension, filter| elastic_qry_predicate(dimension, filter) }
+  def query(filters, queries)
+
+    filter_predicates = filters.map { |f| elastic_qry_predicate(f) }
 
     queries_with_filters =
-      @prepared_queries.map do |dimension, query|
+      queries.map do |dimension, groups|
+        query = prep_elastic_query(dimension, groups, @conf['dims_and_groups'])
+
         # https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#a-group-does-not-observe-its-dimensions-filters
-        applicable_clauses =
-          adjust_filters_for_dimension(dimension, filter_predicates)
+        applicable_clauses = adjust_filters_for_dimension(dimension, filter_predicates)
 
         query.merge(filters_to_elastic_query(applicable_clauses))
       end
@@ -34,10 +27,7 @@ class ElasticWrapper
 
     # https://rubydoc.info/gems/elasticsearch-api/Elasticsearch/API/Actions#msearch-instance_method
     qry_result =
-      @search_client.msearch(
-        index: @conf[:index],
-        body: queries_with_filters.map { |query| { search: query } }
-      )
+      @search_client.msearch(index: @conf[:index], body: queries_with_filters.map { |query| { search: query } })
 
     elastic_time = qry_result['took']
 
@@ -45,15 +35,10 @@ class ElasticWrapper
 
     all_count, selected_count = extract_counts(filter_predicates, raw_results)
 
-    extracted_results = extract_results(raw_results)
-    formatted = format_results(extracted_results)
+    chart_data = extract_results(raw_results)
+    # formatted = format_results(extracted_results)
 
-    {
-      elasticTime: elastic_time,
-      "selectedRecords": selected_count,
-      "totalRecords": all_count,
-      "chartData": formatted
-    }
+    { elasticTime: elastic_time, selectedRecords: selected_count, totalRecords: all_count, chartData: chart_data }
   end
 
   private
@@ -62,9 +47,7 @@ class ElasticWrapper
     # To get count of selected records, all the filter applied
     # not needed if there are no filters
     unless filter_predicates.empty?
-      queries_with_filters.push(
-        { size: 0 }.merge(filters_to_elastic_query(filter_predicates))
-      )
+      queries_with_filters.push({ size: 0 }.merge(filters_to_elastic_query(filter_predicates)))
     end
 
     # To get count of all records
