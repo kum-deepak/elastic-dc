@@ -13,7 +13,7 @@ def prep_elastic_query(dimension, groups, dims_and_groups)
     groups.map do |group|
       # the meta entries are returned by Elastic as part of the results.
       # These are used to arrange the output for specific charts
-      query = {meta: { dimId: dimension, groupId: group }}
+      query = { meta: { dimId: dimension, groupId: group } }
 
       query = query.merge(dim_conf)
 

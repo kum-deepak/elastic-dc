@@ -10,7 +10,6 @@ class ElasticWrapper
   end
 
   def query(filters, queries)
-
     filter_predicates = filters.map { |f| elastic_qry_predicate(f) }
 
     queries_with_filters =
