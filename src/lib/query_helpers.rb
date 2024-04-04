@@ -80,3 +80,11 @@ def filters_to_elastic_query(applicable_clauses)
   applicable_clauses = applicable_clauses.map { |_, f| f }
   { query: { bool: { filter: applicable_clauses } } }
 end
+
+def total_count_query
+  { size: 0 }
+end
+
+def selected_count_query(filter_predicates)
+  { size: 0 }.merge(filters_to_elastic_query(filter_predicates))
+end

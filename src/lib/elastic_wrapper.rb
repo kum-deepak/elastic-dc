@@ -9,7 +9,7 @@ class ElasticWrapper
     @search_client = search_client
   end
 
-  def query(filters, queries)
+  def query(filters, queries, fetch_selected_count, fetch_total_count)
     filter_predicates = filters.map { |f| elastic_qry_predicate(f) }
 
     queries_with_filters =
@@ -22,7 +22,10 @@ class ElasticWrapper
         query.merge(filters_to_elastic_query(applicable_clauses))
       end
 
-    add_queries_for_counts(filter_predicates, queries_with_filters)
+    # To get count of selected records, all the filter applied
+    queries_with_filters.push(selected_count_query(filter_predicates)) if fetch_selected_count
+    # To get count of all records
+    queries_with_filters.push(total_count_query) if fetch_total_count
 
     # https://rubydoc.info/gems/elasticsearch-api/Elasticsearch/API/Actions#msearch-instance_method
     qry_result =
@@ -32,38 +35,15 @@ class ElasticWrapper
 
     raw_results = qry_result['responses']
 
-    all_count, selected_count = extract_counts(filter_predicates, raw_results)
+    all_count = extract_count(raw_results.pop) if fetch_total_count
+    selected_count = extract_count(raw_results.pop) if fetch_selected_count
 
     chart_data = extract_results(raw_results)
 
-    { elasticTime: elastic_time, selectedRecords: selected_count, totalRecords: all_count, chartData: chart_data }
-  end
+    out = { elasticTime: elastic_time, chartData: chart_data }
+    out['totalRecords'] = all_count if fetch_total_count
+    out['selectedRecords'] = selected_count if fetch_selected_count
 
-  private
-
-  def add_queries_for_counts(filter_predicates, queries_with_filters)
-    # To get count of selected records, all the filter applied
-    # not needed if there are no filters
-    unless filter_predicates.empty?
-      queries_with_filters.push({ size: 0 }.merge(filters_to_elastic_query(filter_predicates)))
-    end
-
-    # To get count of all records
-    queries_with_filters.push({ size: 0 })
-  end
-
-  def extract_counts(filter_predicates, raw_results)
-    res_all = raw_results.pop
-    all_count = res_all['hits']['total']['value']
-
-    selected_count =
-      if filter_predicates.empty?
-        all_count
-      else
-        res_selected = raw_results.pop
-        res_selected['hits']['total']['value']
-      end
-
-    [all_count, selected_count]
+    out
   end
 end

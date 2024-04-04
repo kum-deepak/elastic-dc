@@ -35,3 +35,7 @@ def extract_results(raw_results)
   results = raw_results.map { |result| extract_result(result) }
   results.flatten
 end
+
+def extract_count(res)
+  res['hits']['total']['value']
+end

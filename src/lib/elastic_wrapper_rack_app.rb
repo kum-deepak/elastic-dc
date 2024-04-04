@@ -11,7 +11,9 @@ class ElasticWrapperRackApp < ElasticWrapper
 
     filters = request.params['filters']
     queries = request.params['queries']
-    output = self.query(filters, queries)
+    fetch_selected_count = request.params['selectedRecords']
+    fetch_total_count = request.params['totalRecords']
+    output = self.query(filters, queries, fetch_selected_count, fetch_total_count)
 
     respond_json(output)
   end
