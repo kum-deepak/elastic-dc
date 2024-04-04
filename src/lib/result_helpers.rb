@@ -24,13 +24,14 @@ end
 
 def extract_result(result)
   result['aggregations'].values.map do |res|
-    chart_data = { values: res['buckets'].map { |bucket| flatten_bucket(bucket) }.sort_by { |b| b['key'] } }
+    groupings = { values: res['buckets'].map { |bucket| flatten_bucket(bucket) }.sort_by { |b| b['key'] } }
 
     # the res['meta'] will have dimId and groupId
-    res['meta'].merge(chart_data)
+    res['meta'].merge(groupings)
   end
 end
 
 def extract_results(raw_results)
-  raw_results.map { |result| extract_result(result) }.flatten
+  results = raw_results.map { |result| extract_result(result) }
+  results.flatten
 end

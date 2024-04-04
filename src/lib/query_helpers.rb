@@ -56,12 +56,6 @@ def elastic_qry_predicate(filter)
   [dimension, filter_clause]
 end
 
-# https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#a-group-does-not-observe-its-dimensions-filters
-# This method emulates the behavior
-def adjust_filters_for_dimension(dimension, filters_info)
-  filters_info.reject { |dim, _| dim == dimension }
-end
-
 # Query fragment to Elastic
 #
 # {

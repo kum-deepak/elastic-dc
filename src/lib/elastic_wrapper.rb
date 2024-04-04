@@ -18,7 +18,7 @@ class ElasticWrapper
         query = prep_elastic_query(dimension, groups, @conf['dims_and_groups'])
 
         # https://github.com/crossfilter/crossfilter/wiki/Crossfilter-Gotchas#a-group-does-not-observe-its-dimensions-filters
-        applicable_clauses = adjust_filters_for_dimension(dimension, filter_predicates)
+        applicable_clauses = filter_predicates.reject { |dim, _| dim == dimension }
 
         query.merge(filters_to_elastic_query(applicable_clauses))
       end
@@ -36,7 +36,6 @@ class ElasticWrapper
     all_count, selected_count = extract_counts(filter_predicates, raw_results)
 
     chart_data = extract_results(raw_results)
-    # formatted = format_results(extracted_results)
 
     { elasticTime: elastic_time, selectedRecords: selected_count, totalRecords: all_count, chartData: chart_data }
   end
