@@ -22,18 +22,13 @@ def flatten_bucket(bucket)
   { 'key' => key, 'value' => hash }
 end
 
-def extract_result(result)
+def extract_chart_result(result)
   result['aggregations'].values.map do |res|
     groupings = { values: res['buckets'].map { |bucket| flatten_bucket(bucket) }.sort_by { |b| b['key'] } }
 
     # the res['meta'] will have dimId and groupId
     res['meta'].merge(groupings)
   end
-end
-
-def extract_results(raw_results)
-  results = raw_results.map { |result| extract_result(result) }
-  results.flatten
 end
 
 def extract_count(res)
