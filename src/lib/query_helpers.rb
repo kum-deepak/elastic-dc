@@ -31,8 +31,8 @@ end
 
 # filters from dc
 #
-# [{"chartId"=>"yearly-bubble-chart", "filterType"=>"Simple", "values"=>[1996]},
-# {"chartId"=>"fluctuation-chart", "filterType"=>"RangedFilter", "values"=>[[-1, 5]]}]
+# [{"dimId"=>"year", "filterType"=>"Simple", "values"=>[1996]},
+# {"dimId"=>"fluctuation", "filterType"=>"RangedFilter", "values"=>[[-1, 5]]}]
 
 # dc-to-elastic query predicate
 def elastic_qry_predicate(filter)
@@ -87,4 +87,12 @@ end
 
 def selected_count_query(filter_predicates)
   { size: 0 }.merge(filters_to_elastic_query(filter_predicates))
+end
+
+private
+
+# { query: { bool: { filter: [] } }, sort: ['date'], size: 4, from: 20 }
+def create_row_data_query(spec, filter_predicates)
+  query = filters_to_elastic_query(filter_predicates)
+  query.merge({ sort: spec['sort'], size: spec['limit'], from: spec['offset'] })
 end

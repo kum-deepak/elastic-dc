@@ -34,3 +34,7 @@ end
 def extract_count(res)
   res['hits']['total']['value']
 end
+
+def extract_row_data_results(res, fields)
+  res['hits']['hits'].map { |r| r['_source'].slice(*fields) }
+end

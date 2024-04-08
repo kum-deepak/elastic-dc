@@ -10,10 +10,17 @@ class ElasticWrapper
   end
 
   def query(filters, queries, row_data_queries, fetch_selected_count, fetch_total_count)
+    # We will make a single bulk queries to Elastic to fetch all required data
+    #   First we will setup queries and their associated callback
+    #     The callback will be invoked with the corresponding elastic result
+    #     The callback is expected to add the result to ret_val
+
     ret_val = { 'chartData' => [], 'rowData' => [] }
 
+    # This will have list of queries and associated callbacks
     elastic_queries_and_callbacks = []
 
+    # Create Elastic query fragments for each filter
     filter_predicates = filters.map { |f| elastic_qry_predicate(f) }
 
     # count queries
@@ -29,16 +36,12 @@ class ElasticWrapper
       elastic_queries_and_callbacks.push([total_count_query, ->(res) { ret_val['totalRecords'] = extract_count(res) }])
     end
 
-    row_data_queries.each do |q|
-      # { query: { bool: { filter: [] } }, sort: ['date'], size: 4, from: 20 }
-      query = filters_to_elastic_query(filter_predicates)
-      query = query.merge({ sort: ['date'], size: 10, from: 0 })
+    row_data_queries.each do |spec|
       elastic_queries_and_callbacks.push(
         [
-          query,
+          create_row_data_query(spec, filter_predicates),
           ->(res) do
-            res = res['hits']['hits'].map { |r| r['_source'].slice('date', 'open', 'close', 'volume') }
-            ret_val['rowData'].push({ spec: q, res: res })
+            ret_val['rowData'].push({ specId: spec['specId'], res: extract_row_data_results(res, (spec['fields'])) })
           end,
         ],
       )
@@ -56,14 +59,18 @@ class ElasticWrapper
       elastic_queries_and_callbacks.push([query, ->(res) { ret_val['chartData'].concat extract_chart_result(res) }])
     end
 
+    # create separate lists
     elastic_queries, result_callbacks = elastic_queries_and_callbacks.transpose
 
     # https://rubydoc.info/gems/elasticsearch-api/Elasticsearch/API/Actions#msearch-instance_method
     qry_result = @search_client.msearch(index: @conf[:index], body: elastic_queries.map { |query| { search: query } })
 
-    elastic_results_and_callbacks =   qry_result['responses'].zip(result_callbacks)
+    ret_val['elasticTime'] = qry_result['took']
+
+    # pair each result with the corresponding callback, and invoke callbacks
+    elastic_results_and_callbacks = qry_result['responses'].zip(result_callbacks)
     elastic_results_and_callbacks.each { |result, callback| callback.(result) }
 
-    ret_val.merge({ 'elasticTime' => qry_result['took'] })
+    ret_val
   end
 end
