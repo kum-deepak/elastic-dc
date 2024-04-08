@@ -9,9 +9,9 @@ class ElasticWrapperRackApp < ElasticWrapper
   def call(env)
     request = Rack::Request.new(env)
 
-    filters = request.params['filters']
-    queries = request.params['queries']
-    raw_data_queries = request.params['rowQueries']
+    filters = request.params['filters'] || []
+    queries = request.params['queries'] || []
+    raw_data_queries = request.params['rowQueries'] || []
     fetch_selected_count = request.params['selectedRecords']
     fetch_total_count = request.params['totalRecords']
     output = self.query(filters, queries, raw_data_queries, fetch_selected_count, fetch_total_count)
